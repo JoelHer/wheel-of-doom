@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 import UiButton from '@/components/ui-button.vue'
 import UiCard from '@/components/ui-card.vue'
@@ -12,6 +11,7 @@ const spinDuration = ref(6)
 const spinning = ref(false)
 const winner = ref('')
 const rotation = ref(0)
+const importError = ref('')
 
 const palette = ['#8b5cf6', '#06b6d4', '#22c55e', '#f97316', '#f43f5e', '#a855f7', '#14b8a6', '#84cc16']
 
@@ -79,9 +79,17 @@ function spin() {
 }
 
 function parseCSV(content: string) {
-  const parsed = Papa.parse<string[]>(content.trim(), { skipEmptyLines: true })
-  const flat = parsed.data.flat().map((entry) => String(entry).trim())
-  namesText.value = flat.filter(Boolean).join('\n')
+  const rows = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  const values = rows
+    .flatMap((line) => line.split(','))
+    .map((entry) => entry.replace(/^"|"$/g, '').trim())
+    .filter(Boolean)
+
+  namesText.value = values.join('\n')
 }
 
 function parseExcel(data: ArrayBuffer) {
@@ -97,10 +105,18 @@ async function importFile(event: Event) {
   const file = input.files?.[0]
   if (!file) return
 
-  if (file.name.endsWith('.csv')) {
-    parseCSV(await file.text())
-  } else if (file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) {
-    parseExcel(await file.arrayBuffer())
+  importError.value = ''
+
+  try {
+    if (file.name.endsWith('.csv')) {
+      parseCSV(await file.text())
+    } else if (file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) {
+      parseExcel(await file.arrayBuffer())
+    } else {
+      importError.value = 'Unsupported file type. Use CSV or Excel (.xls/.xlsx).'
+    }
+  } catch {
+    importError.value = 'Failed to import file. Please check the format and try again.'
   }
 
   input.value = ''
@@ -127,6 +143,7 @@ async function importFile(event: Event) {
       <div class="space-y-2">
         <label class="text-sm font-medium">Import CSV / Excel</label>
         <UiInput type="file" @change="importFile" />
+        <p v-if="importError" class="text-sm text-rose-300">{{ importError }}</p>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
