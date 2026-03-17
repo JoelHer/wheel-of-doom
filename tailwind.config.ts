@@ -6,12 +6,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: 'hsl(222.2 84% 4.9%)',
-        foreground: 'hsl(210 40% 98%)',
-        card: 'hsl(222.2 47.4% 11.2%)',
-        border: 'hsl(217.2 32.6% 17.5%)',
-        muted: 'hsl(217.2 32.6% 17.5%)',
-        primary: 'hsl(262.1 83.3% 57.8%)',
+        background: 'hsl(8 43% 5%)',
+        foreground: 'hsl(35 44% 94%)',
+        card: 'hsl(8 28% 10%)',
+        border: 'hsl(11 33% 22%)',
+        muted: 'hsl(9 24% 16%)',
+        primary: 'hsl(17 92% 57%)',
       },
     },
   },

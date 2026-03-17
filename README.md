@@ -1,6 +1,6 @@
-# Wheel of Names (Vue + shadcn-style UI)
+# Wheel of Doom (Vue + shadcn-style UI)
 
-A configurable wheel-of-names app built with Vue 3, Vite, Tailwind, and shadcn-inspired components.
+A configurable horror-styled wheel-of-doom app built with Vue 3, Vite, Tailwind, and shadcn-inspired components.
 
 ## Features
 
