@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import * as XLSX from 'xlsx'
 import UiButton from '@/components/ui-button.vue'
 import UiCard from '@/components/ui-card.vue'
 import UiInput from '@/components/ui-input.vue'
-
-const DEFAULT_NAMES_URL = 'https://raw.githubusercontent.com/JoelHer/wheel-of-doom/main/names.csv'
 
 const namesText = ref('Alice\nBob\nCharlie\nDiana\nEve\nFrank')
 const baseSpeed = ref(7)
@@ -14,7 +12,6 @@ const spinning = ref(false)
 const winner = ref('')
 const rotation = ref(0)
 const importError = ref('')
-const loadingRemoteNames = ref(false)
 
 const palette = ['#8b5cf6', '#06b6d4', '#22c55e', '#f97316', '#f43f5e', '#a855f7', '#14b8a6', '#84cc16']
 
@@ -25,27 +22,13 @@ const names = computed(() =>
     .filter(Boolean),
 )
 
-const sliceAngle = computed(() => (names.value.length ? 360 / names.value.length : 0))
-
-const labelDistance = computed(() => {
-  if (names.value.length <= 8) return 125
-  if (names.value.length <= 14) return 140
-  return 152
-})
-
-const labelFontSize = computed(() => {
-  if (names.value.length <= 8) return '16px'
-  if (names.value.length <= 14) return '13px'
-  return '11px'
-})
-
 const wheelStyle = computed(() => {
   if (!names.value.length) return {}
-
+  const angleStep = 360 / names.value.length
   const slices = names.value
     .map((_, idx) => {
-      const start = idx * sliceAngle.value
-      const end = start + sliceAngle.value
+      const start = idx * angleStep
+      const end = start + angleStep
       return `${palette[idx % palette.length]} ${start}deg ${end}deg`
     })
     .join(', ')
@@ -59,7 +42,8 @@ const wheelStyle = computed(() => {
 function chooseWinner(finalRotation: number) {
   const normalized = ((finalRotation % 360) + 360) % 360
   const pointerAngle = (360 - normalized + 270) % 360
-  const index = Math.floor(pointerAngle / sliceAngle.value) % names.value.length
+  const step = 360 / names.value.length
+  const index = Math.floor(pointerAngle / step) % names.value.length
   winner.value = names.value[index]
 }
 
@@ -137,23 +121,6 @@ async function importFile(event: Event) {
 
   input.value = ''
 }
-
-async function loadRemoteNames() {
-  loadingRemoteNames.value = true
-  importError.value = ''
-
-  try {
-    const response = await fetch(DEFAULT_NAMES_URL)
-    if (!response.ok) throw new Error('Request failed')
-    parseCSV(await response.text())
-  } catch {
-    importError.value = 'Could not load default names from GitHub. You can still paste or import names manually.'
-  } finally {
-    loadingRemoteNames.value = false
-  }
-}
-
-onMounted(loadRemoteNames)
 </script>
 
 <template>
@@ -163,8 +130,6 @@ onMounted(loadRemoteNames)
         <h1 class="text-2xl font-bold">Wheel of Names</h1>
         <p class="text-sm text-gray-300">Configure names, speed, duration, then spin.</p>
       </div>
-
-      <p v-if="loadingRemoteNames" class="text-sm text-cyan-300">Loading names from GitHub…</p>
 
       <div class="space-y-2">
         <label class="text-sm font-medium">Names (one per line)</label>
@@ -203,24 +168,19 @@ onMounted(loadRemoteNames)
     <UiCard class="flex flex-col items-center justify-center gap-6">
       <div class="relative">
         <div class="absolute left-1/2 top-0 z-10 h-0 w-0 -translate-x-1/2 -translate-y-2 border-x-[16px] border-b-[24px] border-x-transparent border-b-primary" />
-        <div class="relative h-[440px] w-[440px] rounded-full border-4 border-border shadow-2xl" :style="wheelStyle">
+        <div
+          class="relative h-[440px] w-[440px] rounded-full border-4 border-border shadow-2xl"
+          :style="wheelStyle"
+        >
           <div
             v-for="(name, index) in names"
             :key="name + index"
-            class="pointer-events-none absolute left-1/2 top-1/2"
+            class="pointer-events-none absolute left-1/2 top-1/2 origin-left text-sm font-medium text-white"
             :style="{
-              transform: `rotate(${(index + 0.5) * sliceAngle}deg) translateX(${labelDistance}px)`,
+              transform: `rotate(${(index + 0.5) * (360 / names.length)}deg) translateX(70px)`,
             }"
           >
-            <span
-              class="block max-w-[130px] -translate-x-1/2 -translate-y-1/2 text-center font-medium text-white drop-shadow"
-              :style="{
-                transform: `rotate(${90 - ((index + 0.5) * sliceAngle)}deg)`,
-                fontSize: labelFontSize,
-              }"
-            >
-              {{ name }}
-            </span>
+            {{ name }}
           </div>
           <div class="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-background" />
         </div>
